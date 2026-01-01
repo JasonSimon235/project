@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Captioning Evaluation System</title>
+
+    <style>
+        body {
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 60px auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background: #1f4ed8;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #163db3;
+        }
+
+        .output-box {
+            background: #f0f3f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .metric h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .metric p {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 8px 0 0 0;
+            color: #1f4ed8;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 13px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Image Captioning Evaluation System</h1>
+    <p class="subtitle">
+        Vision–Language Model Evaluation using BLEU, METEOR, ROUGE-L and CIDEr
+    </p>
+
+    <!-- Image Upload -->
+    <div class="section">
+        <label>Upload Image</label>
+        <input type="file" id="imageInput">
+    </div>
+
+    <!-- Image ID -->
+    <div class="section">
+        <label>Image Identifier (Dataset Reference)</label>
+        <input type="text" id="imageId" placeholder="e.g. 25676">
+    </div>
+
+    <!-- Buttons -->
+    <div class="section">
+        <button onclick="generateCaption()">Generate Caption</button>
+        <button onclick="evaluateCaption()">Evaluate Caption</button>
+    </div>
+
+    <!-- Generated Caption -->
+    <div class="section">
+        <label>Generated Caption</label>
+        <div class="output-box" id="captionOutput">
+            Caption will appear here.
+        </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="section">
+        <label>Evaluation Metrics</label>
+
+        <div class="metrics-grid">
+            <div class="metric">
+                <h3>BLEU-1</h3>
+                <p id="bleu">—</p>
+            </div>
+
+            <div class="metric">
+                <h3>METEOR</h3>
+                <p id="meteor">—</p>
+            </div>
+
+            <div class="metric">
+                <h3>ROUGE-L</h3>
+                <p id="rouge">—</p>
+            </div>
+
+            <div class="metric">
+                <h3>CIDEr</h3>
+                <p id="cider">—</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        MSc Advanced Computer Science Project · Image Captioning & Evaluation
+    </footer>
+
+</div>
+
+<script>
+let generatedCaption = "";
+
+// Generate Caption
+function generateCaption() {
+    const file = document.getElementById("imageInput").files[0];
+    if (!file) {
+        alert("Please upload an image.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    fetch("/generate-caption", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        generatedCaption = data.generated_caption;
+        document.getElementById("captionOutput").innerText = generatedCaption;
+    })
+    .catch(() => alert("Caption generation failed."));
+}
+
+// Evaluate Caption
+function evaluateCaption() {
+    const imageId = document.getElementById("imageId").value;
+
+    if (!imageId || !generatedCaption) {
+        alert("Please generate a caption and enter an image ID.");
+        return;
+    }
+
+    fetch("/evaluate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            image_id: imageId,
+            candidate_caption: generatedCaption
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("bleu").innerText = data.bleu;
+        document.getElementById("meteor").innerText = data.meteor;
+        document.getElementById("rouge").innerText = data.rouge_l;
+        document.getElementById("cider").innerText = data.cider;
+    })
+    .catch(() => alert("Evaluation failed."));
+}
+</script>
+
+</body>
+</html>
